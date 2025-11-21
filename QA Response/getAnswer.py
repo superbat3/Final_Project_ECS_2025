@@ -8,7 +8,7 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 DATA_PATH = "data/sampledQA.jsonl"
-OUTPUT_PATH = "data/4omini-direct.jsonl"
+OUTPUT_PATH = "data/answer/4omini-direct.jsonl"
 
 
 def load_dataset(path):
