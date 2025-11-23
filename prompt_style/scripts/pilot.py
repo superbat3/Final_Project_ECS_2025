@@ -3,6 +3,7 @@ import pandas as pd
 from openai import OpenAI
 from tqdm import tqdm
 from dotenv import load_dotenv
+from load_dataset import load_prehistory_qa
 
 load_dotenv() 
 
@@ -14,7 +15,7 @@ client = OpenAI()
 
 
 # ============================
-# 1. 加载数据集并展开
+# 1. Data Loading
 # ============================
 print("Loading dataset...")
 
@@ -22,26 +23,34 @@ print("Loading dataset...")
 dataset = load_dataset("nielsprovos/world-history-1500-qa")
 
 # 2. 把 train 切成 pandas
-df = dataset["train"].to_pandas()
+df1 = dataset["train"].to_pandas()
 
 # 3. 正确展开：先 explode，再 json_normalize
-df = df.explode("qa_pairs", ignore_index=True)
+df1 = df1.explode("qa_pairs", ignore_index=True)
 
 # 4. qa_pairs 是一个 dict，拆开
-qa = pd.json_normalize(df["qa_pairs"])
+qa = pd.json_normalize(df1["qa_pairs"])
 
 # 5. 合并
-df = pd.concat([df.drop(columns=["qa_pairs"]), qa], axis=1)
+df1 = pd.concat([df1.drop(columns=["qa_pairs"]), qa], axis=1)
 
 # 6. 只保留 question 和 answer
-df = df[["question", "answer"]]
-df.rename(columns={"answer": "gold"}, inplace=True)
+df1 = df1[["question", "answer"]]
+df1.rename(columns={"answer": "gold"}, inplace=True)
 
 # print(df.head(20))
 # print(df.shape)
-print("Dataset loaded. Total QA pairs:", len(df))
+print("Dataset 1 loaded. Total QA pairs:", len(df1))
 
 
+
+url = "https://raw.githubusercontent.com/provos/world-history-to-1500-qa/master/dataset.json"
+
+df2 = load_prehistory_qa(url)
+
+
+# Choose one of the datasets
+df = df2
 
 # ============================
 # 2. 随机抽取问题
