@@ -5,6 +5,18 @@ numpy
 scikit-learn
 textstat
 # youdotcom
+pandas
+numpy
+datasets
+sacrebleu
+bert-score
+transformers
+matplotlib
+seaborn
+tqdm
+python-dotenv
+scikit-learn
+
 
 
 

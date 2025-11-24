@@ -4,67 +4,93 @@ from openai import OpenAI
 from tqdm import tqdm
 from dotenv import load_dotenv
 from load_dataset import load_prehistory_qa
+import argparse
 
-load_dotenv() 
 
 # ============================
 # 0. 配置模型 Client
 # ============================
+load_dotenv() 
 client = OpenAI()
 
+
+# ============================
+# 0. Argument Parser
+# ============================
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="Generate LLM answers for historical QA dataset."
+    )
+
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="since1500",
+        choices=["since1500", "to1500", "both"],
+        help="Choose dataset: since1500 | to1500 | both"
+    )
+
+    args = parser.parse_args()
+    print(f"[INFO] Using dataset = {args.dataset}")
+    return args
+
+args = get_args()
 
 
 # ============================
 # 1. Data Loading
 # ============================
+# Load since1500 (HuggingFace)
+def load_since1500():
+    raw = load_dataset("nielsprovos/world-history-1500-qa")
+    df = raw["train"].to_pandas()
+
+    # explode qa_pairs
+    df = df.explode("qa_pairs", ignore_index=True)
+
+    # unpack dict
+    qa = pd.json_normalize(df["qa_pairs"])
+    df = pd.concat([df.drop(columns=["qa_pairs"]), qa], axis=1)
+
+    df = df[["question", "answer"]]
+    df.rename(columns={"answer": "gold"}, inplace=True)
+
+    return df
+
+
+# Choose dataset based on args
 print("Loading dataset...")
+if args.dataset == "to1500":
+    df = load_prehistory_qa("https://raw.githubusercontent.com/provos/world-history-to-1500-qa/master/dataset.json")
 
-# 1. 加载
-dataset = load_dataset("nielsprovos/world-history-1500-qa")
+elif args.dataset == "since1500":
+    df = load_since1500()
 
-# 2. 把 train 切成 pandas
-df1 = dataset["train"].to_pandas()
-
-# 3. 正确展开：先 explode，再 json_normalize
-df1 = df1.explode("qa_pairs", ignore_index=True)
-
-# 4. qa_pairs 是一个 dict，拆开
-qa = pd.json_normalize(df1["qa_pairs"])
-
-# 5. 合并
-df1 = pd.concat([df1.drop(columns=["qa_pairs"]), qa], axis=1)
-
-# 6. 只保留 question 和 answer
-df1 = df1[["question", "answer"]]
-df1.rename(columns={"answer": "gold"}, inplace=True)
-
-# print(df.head(20))
-# print(df.shape)
-print("Dataset 1 loaded. Total QA pairs:", len(df1))
+elif args.dataset == "both":
+    df1 = load_since1500()
+    df2 = load_prehistory_qa("https://raw.githubusercontent.com/provos/world-history-to-1500-qa/master/dataset.json")
+    df1["period"] = "since1500"
+    df2["period"] = "to1500"
+    df = pd.concat([df1, df2]).reset_index(drop=True)
 
 
 
-url = "https://raw.githubusercontent.com/provos/world-history-to-1500-qa/master/dataset.json"
-
-df2 = load_prehistory_qa(url)
+print("Dataset loaded. Total QA pairs:", len(df))
 
 
-# Choose one of the datasets
-df = df2
 
 # ============================
 # 2. 随机抽取问题
 # ============================
-N = 30
-sample = df.sample(N, random_state=42).reset_index(drop=True)
+USE_FULL = True
 
-print(f"Sampled {N} questions.")
-
-# sample = df.sample(3, random_state=42)
-# for _, row in sample.iterrows():
-#     print("Q:", row["question"])
-#     print("A:", row["answer"])
-#     print()
+if USE_FULL:
+    sample = df.copy().reset_index(drop=True)
+    print(f"Using full dataset: {len(sample)} questions.")
+else:
+    N = 30
+    sample = df.sample(N, random_state=42).reset_index(drop=True)
+    print(f"Sampled {N} questions.")
 
 
 
@@ -87,7 +113,7 @@ Question: {q}
 
 PROMPT_FACT = """You are a careful historian.
 Only state facts that are widely verified by historical sources.
-Give a short answer in bullet points (1\-3 bullets).
+Give a short answer in bullet points (1-3 bullets).
 
 Question: {q}
 Answer:
@@ -149,5 +175,4 @@ for i, r in tqdm(sample.iterrows(), total=len(sample), desc="Questions"):
 out = pd.DataFrame(rows)
 out.to_csv("pilot_results.csv", index=False)
 
-print("\nSaved pilot_results.csv")
-print("Experiment complete!")
+print("Saved pilot_results.csv. You may move it to data/ manually.")
