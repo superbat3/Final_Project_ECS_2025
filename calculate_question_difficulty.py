@@ -5,7 +5,18 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import textstat
 from openai import OpenAI
-import youdotcom
+import ssl
+import nltk
+
+# Fix SSL certificate issue for nltk downloads
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+nltk.download('cmudict', quiet=True)
 
 # -----------------------------------------------------
 # CONFIG
@@ -45,16 +56,16 @@ def you_search(query: str):
         raise ValueError("YOU_API_KEY environment variable is not set. Please set it before running.")
 
     # Initialize the SDK with your API key
-    you = youdotcom.You(YOU_API_KEY)
+    # you = youdotcom.You(YOU_API_KEY)
 
-    # Perform a search
-    results = you.search.unified(query=query)
+    # # Perform a search
+    # results = you.search.unified(query=query)
     
-    # Cache the results
-    CACHE[query] = results
-    save_cache()
+    # # Cache the results
+    # CACHE[query] = results
+    # save_cache()
     
-    return results
+    # return results
 
 # -----------------------------------------------------
 # EMBEDDINGS
@@ -163,7 +174,9 @@ def avg_embedding_distance(question, related_queries):
 # -----------------------------------------------------
 
 def get_difficulty(question):
-    results = you_search(question)
+    # results = you_search(question)
+    complexity = avg_flesch([question])
+    return complexity
 
     # Extract web results from the SDK response
     # The response structure is: results.results.web (list of Web objects)
@@ -183,23 +196,12 @@ def get_difficulty(question):
             # Fallback to description if no snippets
             snippets.append(web.description)
     
-    # Check for instant answer (featured snippet)
-    # The SDK might have this in a different location, check if available
-    has_snippet = False
-    if hasattr(results, 'results'):
-        # Check various possible locations for instant answer
-        if hasattr(results.results, 'instant_answer') and results.results.instant_answer:
-            has_snippet = True
-        elif hasattr(results.results, 'answer') and results.results.answer:
-            has_snippet = True
-
     # Summaries from LLM
     summaries = llm_summaries(snippets)
 
     # Compute components
     agreement = cosine_mean_pairwise(summaries)
     relevance = compute_relevance(question, summaries)
-    complexity = avg_flesch(snippets)
 
     # Extract related queries if available
     related_queries = []
@@ -215,23 +217,17 @@ def get_difficulty(question):
         elif hasattr(results.results, 'news') and results.results.news:
             related_queries = [news.title for news in results.results.news[:5] if hasattr(news, 'title')]
     
-    paa_distance = avg_embedding_distance(question, related_queries)
-
     difficulty = (
-        (1 - (1 if has_snippet else 0)) * 0.30 +
-        (1 - agreement)                * 0.25 +
-        (1 - relevance)                * 0.20 +
-        complexity                     * 0.15 +
-        paa_distance                   * 0.10
+        (1 - agreement)                / 3 +
+        (1 - relevance)                / 3 +
+        complexity                     / 3
     )
 
     return {
-        "difficulty": float(difficulty),
-        "has_snippet": has_snippet,
-        "agreement": agreement,
-        "relevance": relevance,
+        # "difficulty": float(difficulty),
+        # "agreement": agreement,
+        # "relevance": relevance,
         "complexity": complexity,
-        "paa_distance": paa_distance
     }
 
 
@@ -240,6 +236,6 @@ def get_difficulty(question):
 # -----------------------------------------------------
 
 if __name__ == "__main__":
-    q = "How does photosynthesis convert light into chemical energy?"
+    q = "What is the capital of France?"
     result = get_difficulty(q)
     print(result)
