@@ -59,7 +59,11 @@ Output:
 
 # ======== Load dataset ==========
 df = pd.read_csv(project_root/"pilot_results_with_scores.csv")
-
+df = (
+    df.groupby("prompt_style")
+      .apply(lambda x: x.sample(20, random_state=42))
+      .reset_index(drop=True)
+)
 labels = []
 
 print("Running hallucination analysis...\n")
