@@ -3,6 +3,11 @@ from openai import OpenAI
 import time
 from tqdm import tqdm
 from dotenv import load_dotenv
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parents[2]
+#print("[DEBUG] Project Root:", project_root)
+
 
 # Load API key from environment variable (.env)
 load_dotenv() 
@@ -53,7 +58,7 @@ Output:
 
 
 # ======== Load dataset ==========
-df = pd.read_csv("pilot_results.csv")
+df = pd.read_csv(project_root/"pilot_results_with_scores.csv")
 
 labels = []
 

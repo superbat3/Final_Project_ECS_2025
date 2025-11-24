@@ -43,7 +43,8 @@ print("\nAverage BLEU:")
 print(df.groupby("prompt_style")["bleu"].mean())
 
 
-# =============== evaluate BERTScore ============
+# =============== evaluate BERTScore (Fast Batch Version) ============
+
 def clean(s):
     if not isinstance(s, str):
         return ""
@@ -52,20 +53,22 @@ def clean(s):
 df["final_answer"] = df["final_answer"].apply(clean)
 df["gold"] = df["gold"].apply(clean)
 
-bert_f1 = []
+print("\nRunning BERTScore in batch mode...")
 
-for i, r in df.iterrows():
-    try:
-        _, _, F1 = score([r["final_answer"]], [r["gold"]], lang="en", verbose=False)
-        bert_f1.append(F1.item())
-    except Exception as e:
-        print(f"Error on row {i}: {e}")
-        bert_f1.append(None)
+# Convert all answers into lists
+preds = df["final_answer"].tolist()
+golds = df["gold"].tolist()
 
-df["bert_f1"] = bert_f1
+# Run BERTScore ONCE, not N times
+P, R, F1 = score(preds, golds, lang="en", verbose=False, idf=False)
+
+# Attach results
+df["bert_f1"] = F1.numpy()
 df["bert_f1"] = df["bert_f1"].fillna(0)
 
+print("\nAverage BERTScore F1:")
 print(df.groupby("prompt_style")["bert_f1"].mean())
+
 
 
 df.to_csv("pilot_results_with_scores.csv", index=False)

@@ -1,5 +1,16 @@
 openai>=1.0.0
 requests>=2.31.0
+pandas
+numpy
+datasets
+sacrebleu
+bert-score
+transformers
+matplotlib
+seaborn
+tqdm
+python-dotenv
+scikit-learn
 
 
 
