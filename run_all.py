@@ -39,7 +39,7 @@ def main():
 
     # ---------- Temporal analysis ----------
     print("\nTemporal analysis pipeline\n")
-    run("python temporal_analysis/run_temporal_analysis.py")
+    run("python temporal_analysis/run_temporal_analysis.py --dataset {args.dataset}")
     run("python temporal_analysis/visualize_correlations.py")
     run("python temporal_analysis/visualize_conditional.py")
 
