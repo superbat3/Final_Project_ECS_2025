@@ -231,6 +231,60 @@ def get_difficulty(question):
     }
 
 
+def get_period(client: OpenAI, model: str, question: str):
+    """
+Determine the historical period/year a question refers to.
+Return the estimated year as an int.
+    """
+    prompt = f"""
+Predict the historical period/year a question refers to. 
+Return only the predicted year as an integer **and nothing else**.
+
+Rules:
+- If the year is AD, return a positive integer (e.g., "1500", "1066", "1776").
+- If the year is BC, return a negative integer (e.g., -1500 for 1500 BC).
+- If the question refers to a period (e.g., "Middle Ages"), give a single approximate year (e.g., 1000).
+- If multiple years are mentioned, return one of them.
+
+Question: {question}
+
+Respond with:
+- A single year number (e.g. "-1500")"""
+
+    resp = client.responses.create(
+        model=model,
+        input=prompt,
+        max_output_tokens=50
+    )
+    
+    response_text = resp.output_text.strip().upper()
+    
+    # Check if it's metadata
+    if "METADATA" in response_text:
+        return None
+    
+    # Try to extract year from response
+    import re
+    # Look for years (potentially negative for BC years)
+    # Use negative lookbehind/lookahead instead of word boundaries to handle negative numbers
+    # Pattern: optional minus sign, then 1-4 digits, not preceded/followed by digits
+    year_match = re.search(r'(?<!\d)(-?\d{1,4})(?!\d)', response_text)
+    if year_match:
+        try:
+            # Get the full match including optional negative sign
+            full_match = year_match.group(1)
+            # Check if response mentions BC/BCE to ensure negative sign is correct
+            if re.search(r'\b(bc|bce)\b', response_text, flags=re.IGNORECASE):
+                # If BC/BCE mentioned, ensure negative
+                return -abs(int(full_match))
+            # Otherwise return the numeric value (could be positive or already negative)
+            return int(full_match)
+        except ValueError:
+            pass
+    
+    # If no year found, return None (couldn't determine)
+    return None
+
 # -----------------------------------------------------
 # EXAMPLE USAGE
 # -----------------------------------------------------

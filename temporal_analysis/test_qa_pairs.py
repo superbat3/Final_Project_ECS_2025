@@ -9,12 +9,21 @@ import json
 import random
 import requests
 from openai import OpenAI
+import sys
 import os
+import pandas
 from typing import List, Dict, Tuple
+from calculate_question_difficulty import get_period, get_difficulty
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Go up one level to temporal_analysis/, then into prompt_style/scripts
+scripts_dir = os.path.join(os.path.dirname(current_dir), 'hallucination_study', 'scripts')
+sys.path.append(scripts_dir)
+
+from hallucination_judge import judge_hallucination
 # Configuration
 DATASET_URL = "https://raw.githubusercontent.com/provos/world-history-to-1500-qa/master/dataset.json"
-MODEL_NAME = "gpt-4o"  # Using gpt-4o as GPT-5 is not yet available. Change to "gpt-5" when available.
+MODEL_NAME = "gpt-4.1-mini"  # Using gpt-4o as GPT-5 is not yet available. Change to "gpt-5" when available.
 NUM_PAIRS = 5
 
 
@@ -240,14 +249,19 @@ def evaluate_answer(client: OpenAI, model: str, question: str, correct_answer: s
     }
     
     return score, evaluation_details
-def evaluate_with_fact_checking(client: OpenAI, model: str, qa_pairs: List[Dict]):
+def evaluate_with_fact_checking(client: OpenAI, model: str, qa_df: List[Dict]):
     # Test each pair
     results = []
-    for i, pair in enumerate(qa_pairs, 1):
-        question = pair["question"]
-        correct_answer = pair["answer"]
+    for i, row in qa_df.iterrows():
+        question = row["question"]
+        print(question)
+        correct_answer = row["gold"]
+        period = get_period(client, model, question)
+        if period is None:
+            print("  Warning: Question is about metadata, skipping...")
+            continue
         
-        print(f"[{i}/{len(qa_pairs)}] Question: {question[:100]}...")
+        print(f"[{i}/{len(qa_df)}] Question: {question[:100]}...")
         
         # Get GPT answer
         print("  Getting GPT answer...")
@@ -259,29 +273,29 @@ def evaluate_with_fact_checking(client: OpenAI, model: str, qa_pairs: List[Dict]
         
         # Evaluate correctness
         print("  Evaluating answer...")
-        print(f"  Correct answer: {correct_answer}")
-        print(f"  GPT answer: {gpt_answer}")
-        score, evaluation_details = evaluate_answer(client, model, question, correct_answer, gpt_answer)
-        
+        # print(f"  Correct answer: {correct_answer}")
+        # print(f"  GPT answer: {gpt_answer}")
+        # score, evaluation_details = evaluate_answer(client, model, question, correct_answer, gpt_answer)
+        score = judge_hallucination(question, correct_answer, gpt_answer, client)
+        difficulty = get_difficulty(question)
+
         results.append({
+            "year": period,
             "question": question,
+            "difficulty": difficulty,
             "correct_answer": correct_answer,
             "gpt_answer": gpt_answer,
             "score": score,
-            "evaluation_details": evaluation_details
         })
+        pandas.DataFrame(results).to_csv("intermediate_results.csv", index=False)
         
         status = str(score)
         print(f"  Result: {status}")
-        if evaluation_details.get("contradictions"):
-            print(f"    Contradictions found: {len(evaluation_details['contradictions'])}")
-        if evaluation_details.get("missing_facts"):
-            print(f"    Missing facts: {len(evaluation_details['missing_facts'])}")
-        print()
+
     
     # Calculate and print accuracy
     if results:
-        average_score = sum(r["score"] for r in results) / len(results)
+        average_score = sum(float(r["score"]) for r in results) / len(results)
         accuracy = average_score * 100
         
         print("=" * 80)
@@ -289,12 +303,11 @@ def evaluate_with_fact_checking(client: OpenAI, model: str, qa_pairs: List[Dict]
         print("=" * 80)
         print(f"Total questions tested: {len(results)}")
         print(f"Average score: {average_score:.2f}")
-        print(f'Number of contradicting answers: {sum([1 if len(result["evaluation_details"]["contradictions"] ) != 0 else 0 for result in results])}')
-        print(f'Number of answers with missing facts: {sum([1 if len(result["evaluation_details"]["missing_facts"] ) != 0 else 0 for result in results])}')
         print("=" * 80)
         
     else:
         print("No results to display.")
+    return results
 
 def main():
     """Main function to run the Q&A testing."""

@@ -1,7 +1,7 @@
 # LLM Factual Reliability on Historical QA
 ### *Prompt Sensitivity, Hallucination Behavior, and Metric-Based Evaluation*
 
-This project evaluates the factual reliability of **Large Language Models (LLMs)** when answering historical questions. We analyze how prompt design influences accuracy, stability, and hallucination behavior using multiple evaluation metrics across two historical QA datasets.
+This project evaluates the factual reliability of **Large Language Models (LLMs)** when answering historical questions. We analyze how prompt design influences accuracy, stability, and hallucination behavior using multiple evaluation metrics across two historical QA datasets. We also analyze how the time period which a question is centered on affects GPT's hallucination rate.
 
 # Project Overview
 
@@ -38,6 +38,15 @@ project_root/
 │   │   └── plot_hallucination.py
 │   ├── data/        ← CSV outputs placed here manually
 │   └── results/     ← generated plots placed here manually
+│
+├── temporal_analysis/
+│   ├── visualize_correlations.py
+│   ├── visualize_conditional.py
+│   ├── calculate_question_difficulty.py
+│   ├── run_temporal_analsyis.py
+│   ├── test_qa_pairs.py
+│   ├── finalsince.csv / finalto.csv           ← consolidated datasets for temporal analysis
+│   └── plots/                                ← generated plots (correlations_plot.png, conditional_and_bins_plot.png)
 │
 ├── run_all.py       ← Full pipeline runner
 ├── requirements.txt

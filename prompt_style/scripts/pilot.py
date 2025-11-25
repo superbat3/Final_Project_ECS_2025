@@ -134,45 +134,46 @@ def ask_model(prompt):
 
 
 
+if __name__ == "__main__":
 # ============================
 # 5. 运行三种 prompt 得到模型回答
 # ============================
-rows = []
+    rows = []
 
-print("Running model on sampled questions...\n")
+    print("Running model on sampled questions...\n")
 
-for i, r in tqdm(sample.iterrows(), total=len(sample), desc="Questions"):
-    q = r["question"]
-    gold = r["gold"]
+    for i, r in tqdm(sample.iterrows(), total=len(sample), desc="Questions"):
+        q = r["question"]
+        gold = r["gold"]
 
-    for style, template in tqdm(
-        [
-            ("direct", PROMPT_DIRECT),
-            ("explain", PROMPT_EXPLAIN),
-            ("fact", PROMPT_FACT),
-        ],
-        desc=f"Prompts for Q{i}",
-        leave=False
-    ):
-        prompt = template.format(q=q)
-        raw = ask_model(prompt)
+        for style, template in tqdm(
+            [
+                ("direct", PROMPT_DIRECT),
+                ("explain", PROMPT_EXPLAIN),
+                ("fact", PROMPT_FACT),
+            ],
+            desc=f"Prompts for Q{i}",
+            leave=False
+        ):
+            prompt = template.format(q=q)
+            raw = ask_model(prompt)
 
-        # 提取 Final answer（如果存在）
-        if style == "explain" and "Final answer:" in raw:
-            final = raw.split("Final answer:")[1].strip()
-        else:
-            final = raw.strip()
+            # 提取 Final answer（如果存在）
+            if style == "explain" and "Final answer:" in raw:
+                final = raw.split("Final answer:")[1].strip()
+            else:
+                final = raw.strip()
 
-        rows.append({
-            "id": i,
-            "prompt_style": style,
-            "question": q,
-            "gold": gold,
-            "raw_answer": raw,
-            "final_answer": final
-        })
+            rows.append({
+                "id": i,
+                "prompt_style": style,
+                "question": q,
+                "gold": gold,
+                "raw_answer": raw,
+                "final_answer": final
+            })
 
-out = pd.DataFrame(rows)
-out.to_csv("pilot_results.csv", index=False)
+    out = pd.DataFrame(rows)
+    out.to_csv("pilot_results.csv", index=False)
 
-print("Saved pilot_results.csv. You may move it to data/ manually.")
+    print("Saved pilot_results.csv. You may move it to data/ manually.")

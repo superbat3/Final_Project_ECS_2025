@@ -37,6 +37,12 @@ def main():
     run("python hallucination_study/scripts/eval_hallucination.py")
     run("python hallucination_study/scripts/plot_hallucination.py")
 
+    # ---------- Temporal analysis ----------
+    print("\nTemporal analysis pipeline\n")
+    run("python temporal_analysis/run_temporal_analysis.py")
+    run("python temporal_analysis/visualize_correlations.py")
+    run("python temporal_analysis/visualize_conditional.py")
+
     print("\nAll tasks completed successfully!")
     print("• Prompt results saved in prompt_style/results/")
     print("• Hallucination results saved in hallucination_study/results/")

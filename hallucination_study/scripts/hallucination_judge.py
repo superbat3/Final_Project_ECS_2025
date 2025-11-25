@@ -9,13 +9,9 @@ project_root = Path(__file__).resolve().parents[2]
 #print("[DEBUG] Project Root:", project_root)
 
 
-# Load API key from environment variable (.env)
-load_dotenv() 
-
-client = OpenAI()
 
 
-def judge_hallucination(question, gold, answer):
+def judge_hallucination(question, gold, answer, client=OpenAI()):
     prompt = f"""
 You are a factual accuracy evaluator for historical QA.
 
@@ -43,7 +39,7 @@ Output:
 """
     try:
         response = client.responses.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             input=prompt,
             max_output_tokens=20
         )
@@ -56,30 +52,33 @@ Output:
         print("Error:", e)
         return None
 
+if __name__ == "__main__":
+    # Load API key from environment variable (.env)
+    load_dotenv() 
 
-# ======== Load dataset ==========
-df = pd.read_csv(project_root/"pilot_results_with_scores.csv")
+    # ======== Load dataset ==========
+    df = pd.read_csv(project_root/"pilot_results_with_scores.csv")
 
-labels = []
+    labels = []
 
-print("Running hallucination analysis...\n")
-for i, r in tqdm(df.iterrows(), total=len(df)):
-    q = r["question"]
-    gold = r["gold"]
-    ans = r["final_answer"]
+    print("Running hallucination analysis...\n")
+    for i, r in tqdm(df.iterrows(), total=len(df)):
+        q = r["question"]
+        gold = r["gold"]
+        ans = r["final_answer"]
 
-    label = judge_hallucination(q, gold, ans)
-
-    # Retry if model returns garbage or None
-    if label is None:
-        time.sleep(0.3)
         label = judge_hallucination(q, gold, ans)
 
-    labels.append(label)
+        # Retry if model returns garbage or None
+        if label is None:
+            time.sleep(0.3)
+            label = judge_hallucination(q, gold, ans)
 
-    time.sleep(0.3)   # avoid rate limit
+        labels.append(label)
 
-df["hallu_label"] = labels
-df.to_csv("pilot_results_with_hallu.csv", index=False)
+        time.sleep(0.3)   # avoid rate limit
 
-print("DONE! Saved to pilot_results_with_hallu.csv")
+    df["hallu_label"] = labels
+    df.to_csv("pilot_results_with_hallu.csv", index=False)
+
+    print("DONE! Saved to pilot_results_with_hallu.csv")
