@@ -56,12 +56,14 @@ if __name__ == "__main__":
     # Load API key from environment variable (.env)
     load_dotenv() 
 
+
     # ======== Load dataset ==========
     df = pd.read_csv(project_root/"pilot_results_with_scores.csv")
-
-    labels = []
-
-    print("Running hallucination analysis...\n")
+    df = (
+        df.groupby("prompt_style")
+        .apply(lambda x: x.sample(20, random_state=42))
+        .reset_index(drop=True)
+    )
     for i, r in tqdm(df.iterrows(), total=len(df)):
         q = r["question"]
         gold = r["gold"]

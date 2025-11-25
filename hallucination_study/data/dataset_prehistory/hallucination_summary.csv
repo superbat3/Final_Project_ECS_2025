@@ -1,0 +1,4 @@
+prompt_style,hallucination_rate,severe_rate
+direct,0.4,0.15
+explain,0.3,0.05
+fact,0.425,0.05
