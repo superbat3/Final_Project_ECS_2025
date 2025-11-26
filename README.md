@@ -3,6 +3,61 @@
 
 This project evaluates the factual reliability of **Large Language Models (LLMs)** when answering historical questions. We analyze how prompt design influences accuracy, stability, and hallucination behavior using multiple evaluation metrics across two historical QA datasets. We also analyze how the time period which a question is centered on affects GPT's hallucination rate.
 
+# Installation
+```
+git clone git@github.com:superbat3/Final_Project_ECS_2025.git
+cd Final_Project_ECS_2025
+```
+
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+```
+export OPENAI_API_KEY="your_key"
+```
+
+
+# Running
+### visualize plots on since 1500 datasets
+```
+python run_all.py
+```
+
+### rerun evaluation and visualize plots on both datasets
+```
+python run_all.py --rerun_expirements --dataset both
+
+Options:
+
+    --dataset since1500
+    --dataset to1500
+    --dataset both
+
+    --rerun_expirements
+
+
+Pipeline includes:
+
+- Generate responses
+
+- Compute F1/BLEU/BERTScore
+
+- Hallucination analysis
+
+- Generate all plots
+
+
+# Acknowledgments
+
+- UC Davis ECS 289A
+
+- HuggingFace Team
+
+- OpenAI GPT Models
+
 # Project Overview
 
 Large Language Models (LLMs) are strong in text generation but may produce inaccurate or hallucinated historical facts.
@@ -43,7 +98,7 @@ project_root/
 │   ├── visualize_correlations.py
 │   ├── visualize_conditional.py
 │   ├── calculate_question_difficulty.py
-│   ├── run_temporal_analsyis.py
+│   ├── run_temporal_analysis.py
 │   ├── test_qa_pairs.py
 │   ├── finalsince.csv / finalto.csv           ← consolidated datasets for temporal analysis
 │   └── plots/                                ← generated plots (correlations_plot.png, conditional_and_bins_plot.png)
@@ -126,46 +181,3 @@ Labels:
 Judge runs automatically through:
 
 `hallucination/scripts/hallucination_judge.py`
-
-
-# Full Pipeline (One Command)
-```
-python run_all.py --dataset since1500
-```
-
-Options:
-
-    --dataset since1500
-    --dataset to1500
-    --dataset both
-
-
-Pipeline includes:
-
-- Generate responses
-
-- Compute F1/BLEU/BERTScore
-
-- Hallucination analysis
-
-- Generate all plots
-
-# Installation
-    git clone <your_repo>
-    cd project_root
-
-    pip install -r requirements.txt
-
-
-Ensure .env contains:
-
-    OPENAI_API_KEY="your_key"
-
-
-# Acknowledgments
-
-- UC Davis ECS 289A
-
-- HuggingFace Team
-
-- OpenAI GPT Models

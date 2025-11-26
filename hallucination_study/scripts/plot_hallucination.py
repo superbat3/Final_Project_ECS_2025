@@ -3,9 +3,16 @@ import pandas as pd
 
 
 plt.style.use("seaborn-v0_8-whitegrid")
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(current_dir, '..','data','dataset_history')
+
+plt.style.use("seaborn-v0_8-whitegrid")
+
+# Load your evaluated results
 
 # Load data
-df = pd.read_csv("pilot_results_with_hallu.csv")
+df = pd.read_csv(os.path.join(data_dir, "pilot_results_with_hallu.csv"))
 df["prompt_style"] = pd.Categorical(df["prompt_style"],
                                     ["direct", "explain", "fact"],
                                     ordered=True)

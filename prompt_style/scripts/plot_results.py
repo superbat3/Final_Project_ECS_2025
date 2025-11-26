@@ -1,11 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(current_dir, '..','data','dataset_history')
 
 plt.style.use("seaborn-v0_8-whitegrid")
 
 # Load your evaluated results
-df = pd.read_csv("pilot_results_with_scores.csv")
+csv_path = os.path.join(data_dir, "pilot_results_with_scores.csv")
+df = pd.read_csv(csv_path)
 
 # Compute the averages per prompt type
 grouped = df.groupby("prompt_style").agg({

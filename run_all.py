@@ -19,6 +19,7 @@ def main():
     parser.add_argument("--dataset",
                         default="since1500",
                         choices=["since1500", "to1500", "both"])
+    parser.add_argument('--rerun_expirements', action='store_true', default=False)
     args = parser.parse_args()
 
     print("\nStarting FULL PIPELINE")
@@ -27,19 +28,22 @@ def main():
 
     # ---------- Prompt-style pipeline ----------
     print("\nPrompt-style pipeline\n")
-    run(f"python prompt_style/scripts/pilot.py --dataset {args.dataset}")
-    run("python prompt_style/scripts/eval_all.py")
+    if args.rerun_expirements:
+        run(f"python prompt_style/scripts/pilot.py --dataset {args.dataset}")
+        run("python prompt_style/scripts/eval_all.py")
     run("python prompt_style/scripts/plot_results.py")
 
     # ---------- Hallucination pipeline ----------
     print("\nHallucination pipeline\n")
-    run("python hallucination_study/scripts/hallucination_judge.py")
-    run("python hallucination_study/scripts/eval_hallucination.py")
+    if args.rerun_expirements:
+        run("python hallucination_study/scripts/hallucination_judge.py")
+        run("python hallucination_study/scripts/eval_hallucination.py")
     run("python hallucination_study/scripts/plot_hallucination.py")
 
     # ---------- Temporal analysis ----------
     print("\nTemporal analysis pipeline\n")
-    run("python temporal_analysis/run_temporal_analysis.py --dataset {args.dataset}")
+    if args.rerun_expirements: 
+        run(f"python temporal_analysis/run_temporal_analysis.py --dataset {args.dataset}")
     run("python temporal_analysis/visualize_correlations.py")
     run("python temporal_analysis/visualize_conditional.py")
 
